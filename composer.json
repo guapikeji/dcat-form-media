@@ -1,27 +1,26 @@
 {
-    "name": "lake/form-media",
+    "name": "guapikeji/form-media",
     "alias": "表单媒体扩展",
     "description": "Dcat-admin image/video input extension. / Dcat-admin表单媒体扩展。",
     "type": "library",
     "keywords": [
         "dcat-admin", 
-        "lake", 
+        "guapikeji", 
         "media", 
         "form-media", 
         "extension"
     ],
-    "homepage": "https://github.com/deatil/dcat-form-media",
+    "homepage": "https://github.com/guapikeji/dcat-form-media",
     "license": "MIT",
     "authors": [
         {
-            "name": "deatil",
-            "email": "deatil@github.com",
-            "homepage": "https://github.com/deatil"
+            "name": "guapikeji",
+            "email": "2146845950@qq.com",
+            "homepage": "https://github.com/guapikeji"
         }
     ],
     "require": {
         "php": ">=7.2.5",
-        "dcat/laravel-admin": "^2.0"
     },
     "autoload": {
         "psr-4": {
