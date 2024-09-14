@@ -114,6 +114,7 @@ $(function () {
                 var options = mediaCont.data('options');
                 options = $.extend({}, options);
 
+                var keywords = options.keywords;
                 var path = options.path;
                 var uploadUrl = options.upload_url;
                 var createFolderUrl = options.create_folder_url;
@@ -121,6 +122,9 @@ $(function () {
                 var mediaModalCont = $("#" + modalId);
                 var mediaModalPageCont = mediaModalCont.find('.lake-form-media-modal-page');
                 mediaModalPageCont.data('current-page', 1);
+
+                var mediaModalDirInput = mediaModalCont.find(".lake-form-media-dir-input");
+                mediaModalDirInput.val(keywords);
 
                 var mediaModalNavOlCont = mediaModalCont.find('.lake-form-media-nav-ol');
                 mediaModalNavOlCont.data('current-path', path);
@@ -293,9 +297,9 @@ $(function () {
                     perpage: pageSize,
                 });
                 var idx = layer.tips(title, this, {
-                  tips: [1, '#586cb1'],
-                  time: 0,
-                  maxWidth: 210,
+                    tips: [1, '#586cb1'],
+                    time: 0,
+                    maxWidth: 210,
                 });
 
                 $(this).attr('layer-idx', idx);
@@ -316,6 +320,10 @@ $(function () {
 
                 var mediaModalNavOlCont = mediaModalCont.find('.lake-form-media-nav-ol');
                 var currentPath = mediaModalNavOlCont.data('current-path');
+
+                var mediaModalPageCont = mediaModalCont.find('.lake-form-media-modal-page');
+                mediaModalPageCont.data('current-page', 1);
+
 
                 var options = mediaCont.data('options');
 
@@ -869,7 +877,7 @@ $(function () {
                 }
 
                 var html = '<div class="col-xs-6 col-sm-6 col-md-4 col-lg-3 lake-form-media-preview-item" data-src="'+urlList[i]+'">';
-                    html += '<div class="thumbnail lake-form-media-row-col">';
+                html += '<div class="thumbnail lake-form-media-row-col">';
 
                 html += '<div class="lake-form-media-row-img" title="' + urlList[i] + '">';
                 html += this.getFileDisplay(src);

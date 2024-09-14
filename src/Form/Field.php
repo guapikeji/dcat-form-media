@@ -19,12 +19,12 @@ class Field extends BaseField
     protected $view = 'lake-form-media::field';
 
     protected static $css = [
-        '@extension/lake/form-media/field.css'
+        '@extension/guapikeji/form-media/field.css'
     ];
 
     protected static $js = [
-        '@extension/lake/form-media/jquery.dragsort.js',
-        '@extension/lake/form-media/field.js'
+        '@extension/guapikeji/form-media/jquery.dragsort.js',
+        '@extension/guapikeji/form-media/field.js'
     ];
 
     protected $uploadUrl = '';
