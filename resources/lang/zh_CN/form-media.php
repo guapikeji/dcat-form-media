@@ -6,11 +6,12 @@ return [
     'upload'      => '上传',
     'change_sort' => '点击切换排序',
     'create'      => '新建',
+    'search'      => '搜索',
     'close'       => '关闭',
     'save'        => '确定',
     'prev'        => '上一页',
     'next'        => '下一页',
-    
+
     'get_success'           => '获取成功',
     'upload_file_ext_error' => '上传文件格式不被允许',
     'upload_success'        => '上传成功',
@@ -18,7 +19,7 @@ return [
     'create_success'        => '创建成功',
     'create_error'          => '创建失败',
     'create_dirname_empty'  => '文件夹名称不能为空',
-    
+
     // js 使用语言包部分
     'js_empty'            => '空',
     'js_system_tip'       => '系统提示',

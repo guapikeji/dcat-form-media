@@ -6,6 +6,7 @@ return [
     'upload'      => '上傳',
     'change_sort' => '點擊切換排序',
     'create'      => '新建',
+    'search'      => '搜索',
     'close'       => '關閉',
     'save'        => '確定',
     'prev'        => '上一頁',

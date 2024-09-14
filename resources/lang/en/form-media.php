@@ -6,11 +6,12 @@ return [
     'upload'      => 'Upload',
     'change_sort' => 'Change sort',
     'create'      => 'Create',
+    'search'      => 'Search',
     'close'       => 'Close',
     'save'        => 'Save',
     'prev'        => 'Prev',
     'next'        => 'Next',
-    
+
     'get_success'           => 'Get success',
     'upload_file_ext_error' => 'Upload file\'ext error',
     'upload_success'        => 'Upload success',
@@ -18,7 +19,7 @@ return [
     'create_success'        => 'Create success',
     'create_error'          => 'Create error',
     'create_dirname_empty'  => 'Dirname don\'t empty',
-    
+
     // js 使用语言包部分
     'js_empty'            => 'Empty',
     'js_system_tip'       => 'System Tip',

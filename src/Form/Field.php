@@ -17,7 +17,7 @@ use Lake\FormMedia\MediaManager;
 class Field extends BaseField
 {
     protected $view = 'lake-form-media::field';
- 
+
     protected static $css = [
         '@extension/lake/form-media/field.css'
     ];
@@ -26,7 +26,7 @@ class Field extends BaseField
         '@extension/lake/form-media/jquery.dragsort.js',
         '@extension/lake/form-media/field.js'
     ];
-    
+
     protected $uploadUrl = '';
     protected $listUrl = '';
     protected $createFolderUrl = '';
@@ -34,22 +34,24 @@ class Field extends BaseField
 
     protected $disableUpload = false;
     protected $disableCreateFolder = false;
-    
+
     protected $showTitle = false;
     protected $multipleChoice = true;
     protected $showIcon = false;
-    
+
     protected $resize = [];
-    
+
     protected $saveFullUrl = false;
-    
+
     protected $type = '';
     protected $disk = '';
 
+    // 搜索关键字
+    protected $keywords = '';
     protected $path = '';
     protected $limit = 1;
     protected $remove = false;
-    
+
     protected $accept = '';
     protected $nametype = 'uniqid';
     protected $pageSize = 120;
@@ -235,7 +237,7 @@ class Field extends BaseField
     public function path($path = '')
     {
         $this->path = $path;
-        
+
         return $this;
     }
 
@@ -261,7 +263,7 @@ class Field extends BaseField
     public function remove(bool $value = true)
     {
         $this->remove = $value;
-        
+
         return $this;
     }
 
@@ -274,7 +276,7 @@ class Field extends BaseField
     public function accept(string $accept)
     {
         $this->accept = $accept;
-        
+
         return $this;
     }
 
@@ -289,7 +291,7 @@ class Field extends BaseField
         if (! in_array($type, ['uniqid', 'datetime', 'sequence', 'original'])) {
             $type = 'uniqid';
         }
-        
+
         $this->nametype = $type;
         return $this;
     }
@@ -302,7 +304,7 @@ class Field extends BaseField
     public function uniqidName()
     {
         $this->nametype("uniqid");
-        
+
         return $this;
     }
 
@@ -314,7 +316,7 @@ class Field extends BaseField
     public function datetimeName()
     {
         $this->nametype("datetime");
-        
+
         return $this;
     }
 
@@ -326,7 +328,7 @@ class Field extends BaseField
     public function sequenceName()
     {
         $this->nametype("sequence");
-        
+
         return $this;
     }
 
@@ -338,7 +340,7 @@ class Field extends BaseField
     public function originalName()
     {
         $this->nametype("original");
-        
+
         return $this;
     }
 
@@ -362,6 +364,7 @@ class Field extends BaseField
      */
     public function render()
     {
+        $keywords = $this->keywords;
         $path = $this->path;
         $limit = $this->limit;
         $type = $this->type;
@@ -370,7 +373,7 @@ class Field extends BaseField
         $nametype = $this->nametype;
         $pageSize = $this->pageSize;
         $remove = ($this->remove == true) ? 1 : 0;
-        
+
         $rootpath = "";
         if (! empty($this->rootpath)) {
             $rootpath = $this->rootpath;
@@ -385,54 +388,55 @@ class Field extends BaseField
                     ->buildUrl('');
             }
         }
-        
+
         if (empty($this->uploadUrl)) {
             $this->uploadUrl = admin_route('admin.lake-form-media.upload');
         }
-        
+
         if (empty($this->listUrl)) {
             $this->listUrl = admin_route('admin.lake-form-media.get-files');
         }
-        
+
         if (empty($this->createFolderUrl)) {
             $this->createFolderUrl = admin_route('admin.lake-form-media.create-folder');
         }
-        
+
         if ($this->disableUpload) {
             $this->uploadUrl = '';
         }
         if ($this->disableCreateFolder) {
             $this->createFolderUrl = '';
         }
-        
+
         $showTitle = ($this->showTitle == true) ? 1 : 0;
         $multipleChoice = ($this->multipleChoice == true) ? 1 : 0;
         $showIcon = ($this->showIcon == true) ? 1 : 0;
-        
+
         $resize = $this->resize;
-        
+
         $saveFullUrl = ($this->saveFullUrl == true) ? 1 : 0;
 
         $this->addVariables([
             'options' => [
+                'keywords' => $keywords,
                 'path'   => $path,
                 'limit'  => $limit,
                 'remove' => $remove,
                 'type'   => $type,
                 'disk'   => $disk,
-                
+
                 'accept'   => $accept,
                 'nametype' => $nametype,
                 'pagesize' => $pageSize,
-                
+
                 'showtitle'      => $showTitle,
                 'multiplechoice' => $multipleChoice,
                 'showicon'       => $showIcon,
-                
+
                 'resize'      => implode(',', $resize),
-                
+
                 'saveFullUrl' => $saveFullUrl,
-                
+
                 'rootpath'          => $rootpath,
                 'get_files_url'     => $this->listUrl,
                 'upload_url'        => $this->uploadUrl,
