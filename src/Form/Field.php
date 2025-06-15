@@ -43,6 +43,12 @@ class Field extends BaseField
 
     protected $saveFullUrl = false;
 
+    /**
+     * 是否存储素材ID而不是URL
+     * @var bool
+     */
+    protected $storeAsId = false;
+
     protected $type = '';
     protected $disk = '';
 
@@ -195,6 +201,19 @@ class Field extends BaseField
     {
         $this->saveFullUrl = $value;
 
+        return $this;
+    }
+
+    /**
+     * 存储为素材ID
+     *
+     * @param bool $value
+     * @return $this
+     */
+    public function storeAsId(bool $value = true)
+    {
+        $this->storeAsId = $value;
+        
         return $this;
     }
 
@@ -415,6 +434,7 @@ class Field extends BaseField
         $resize = $this->resize;
 
         $saveFullUrl = ($this->saveFullUrl == true) ? 1 : 0;
+        $storeAsId = ($this->storeAsId == true) ? 1 : 0;
 
         $this->addVariables([
             'options' => [
@@ -436,6 +456,7 @@ class Field extends BaseField
                 'resize'      => implode(',', $resize),
 
                 'saveFullUrl' => $saveFullUrl,
+                'storeAsId'   => $storeAsId,
 
                 'rootpath'          => $rootpath,
                 'get_files_url'     => $this->listUrl,

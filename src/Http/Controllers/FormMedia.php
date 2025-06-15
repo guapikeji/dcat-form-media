@@ -74,8 +74,23 @@ class FormMedia extends Controller
             $item->name = $item->cname;
             $item->type = $type;
             $item->time = $item->created_at->format('Y-m-d H:i:s');
-            $item->preview = "<span class=\"file-icon has-img\"><img src=\"{$item->content}{$imageMogr}\" alt=\"{$item->cname}\"></span>";
+            
+            // 根据素材类型设置预览图
+            if ($type === 'video' && !empty($item->cover) && $item->cover !== 'http://') {
+                // 对于视频，如果有封面图，使用封面图作为预览
+                $item->preview = "<span class=\"file-icon has-img\"><div style=\"position: relative;\">
+                    <img src=\"{$item->cover}{$imageMogr}\" alt=\"{$item->cname}\">
+                    <div style=\"position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 30px;\">
+                        <i class=\"fa fa-play-circle-o\"></i>
+                    </div>
+                </div></span>";
+            } else {
+                // 对于其他类型或没有封面的视频，使用内容作为预览
+                $item->preview = "<span class=\"file-icon has-img\"><img src=\"{$item->content}{$imageMogr}\" alt=\"{$item->cname}\"></span>";
+            }
+            
             $item->namesmall = $item->cname;
+            $item->id = $item->id;
             return $item;
         });
 
