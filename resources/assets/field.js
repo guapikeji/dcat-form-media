@@ -434,6 +434,7 @@ $(function () {
 
                 var rootpath = options.rootpath
                 var saveFullUrl = options.saveFullUrl
+                var storeAsId = options.storeAsId;
 
                 // 可多选时
                 var multiplechoice = options.multiplechoice
@@ -450,7 +451,7 @@ $(function () {
                         // 去掉预览
                         thiz.refreshPreview(name, [], options)
                     } else {
-                        urlList = thiz.isJSON( urlListStr );
+                        urlList = thiz.isJSON(urlListStr);
                     }
                 }
 
@@ -460,6 +461,9 @@ $(function () {
                     return false;
                 }
 
+                // 选择的文件列表
+                var selectedFiles = [];
+                
                 if (type == 'blend') {
                     select_true_list = mediaModalCont
                         .find('.lake-form-media-selected');
@@ -469,43 +473,17 @@ $(function () {
                 }
 
                 for (var i = 0; i < select_true_list.length; i++) {
-                    var url = $(select_true_list[i]).data('url');
-
-                    if (saveFullUrl == 1) {
-                        url = rootpath + url
-                    }
-
-                    urlList.push(url);
+                    var item = $(select_true_list[i]);
+                    selectedFiles.push({
+                        id: item.data('id'),
+                        content: item.data('url')
+                    });
                 }
-
-                urlList = thiz.unique(urlList);
-
-                if (limit == 1) {
-                    inputCont.val(urlList[0]);
-                    inputCont.attr("value", urlList[0]);
-                } else {
-                    // 提交限制数量
-                    var newUrlList = [];
-
-                    if (urlList.length < limit) {
-                        limit = urlList.length;
-                    }
-
-                    for (var i = 0; i < limit; i++) {
-                        newUrlList.push(urlList[i]);
-                    }
-                    urlList = newUrlList;
-
-                    urlListJson = JSON.stringify( urlList );
-                    if (urlListJson == '[]') {
-                        $('#LakeFormMediaModel'+name).modal('hide');
-                        return null;
-                    }
-                    inputCont.val(urlListJson);
-                    inputCont.attr("value", urlListJson);
-                }
-
-                thiz.refreshPreview(name, urlList, options)
+                
+                // 使用selectFiles方法统一处理选择的文件
+                thiz.selectFiles(name, selectedFiles);
+                
+                // 关闭模态框
                 $('#LakeFormMediaModel'+name).modal('hide');
             });
 
@@ -527,6 +505,7 @@ $(function () {
 
                 var type = options.type;
                 var limit = options.limit;
+                var storeAsId = options.storeAsId;
 
                 // 可多选时
                 var multiplechoice = options.multiplechoice
@@ -542,36 +521,28 @@ $(function () {
                 if (nowNumVal == '[]') {
                     nowNumVal = '';
                 }
+                
                 var nowNumArr = [];
                 if (nowNumVal) {
                     if (limit == 1) {
                         nowNumArr.push(nowNumVal)
                     } else {
-                        nowNumArr = thiz.isJSON( nowNumVal );
+                        nowNumArr = thiz.isJSON(nowNumVal);
                     }
                 }
 
                 // 不是多选时
                 if (multiplechoice != 1 && limit > 1) {
                     // 添加当前选中
-                    nowNumArr.push($(this).data('url'));
-
-                    if (nowNumArr.length > limit) {
-                        toastr.error(thiz.lang("selected_error", {
-                            num: limit,
-                        }));
-                        return 1;
-                    }
-
-                    urlListJson = JSON.stringify(nowNumArr);
-                    if (urlListJson == '[]') {
-                        $('#LakeFormMediaModel'+name).modal('hide');
-                        return null;
-                    }
-                    inputCont.val(urlListJson);
-                    inputCont.attr("value", urlListJson);
-
-                    thiz.refreshPreview(name, nowNumArr, options)
+                    var selectedItem = {
+                        id: $(this).data('id'),
+                        content: $(this).data('url')
+                    };
+                    
+                    // 使用selectFiles方法统一处理选择的文件
+                    thiz.selectFiles(name, [selectedItem]);
+                    
+                    // 关闭模态框
                     $('#LakeFormMediaModel'+name).modal('hide');
 
                     return false;
@@ -583,14 +554,27 @@ $(function () {
                 } else {
                     var imgItem = mediaModalCont.find('.lake-form-media-field-item');
                 }
+                
+                // 计算已选中的项
                 for (var i = 0; i < imgItem.length; i++) {
-                    var itemUrl = $(imgItem[i]).data('url');
-                    if ($.inArray(itemUrl, nowNumArr) != -1) {
-                        noNeedSelectArr.push(itemUrl);
+                    var item = $(imgItem[i]);
+                    var itemId = item.data('id');
+                    var itemUrl = item.data('url');
+                    
+                    if (storeAsId == 1) {
+                        // 当存储为ID时，通过ID匹配
+                        if ($.inArray(itemId, nowNumArr) != -1) {
+                            noNeedSelectArr.push(itemId);
+                        }
+                    } else {
+                        // 当存储为URL时，通过URL匹配
+                        if ($.inArray(itemUrl, nowNumArr) != -1) {
+                            noNeedSelectArr.push(itemUrl);
+                        }
                     }
                 }
+                
                 var selectedItem = mediaModalCont.find('.lake-form-media-selected');
-
                 var selectNum = nowNumArr.length - noNeedSelectArr.length + selectedItem.length;
 
                 var tag = $(this).hasClass('lake-form-media-selected');
@@ -662,6 +646,7 @@ $(function () {
             var limit = options.limit;
             var remove = options.remove;
             var pageSize = options.pagesize;
+            var storeAsId = options.storeAsId;
 
             var mediaModalCont = $('#LakeFormMediaModel' + name);
             var mediaModalTableCont = mediaModalCont.find('.lake-form-media-body-table');
@@ -719,7 +704,11 @@ $(function () {
                                 var htmltemp = '';
                                 htmltemp += '<div class="col-xs-4 col-md-3">';
 
-                                htmltemp +=     '<div class="thumbnail lake-form-media-field-item lake-form-media-field-item-op" data-type="'+list[i]['type']+'" data-url="'+list[i]['content']+'" title="'+list[i]['name']+'（'+list[i]['time']+'）">';
+                                // 添加id属性到数据中，用于storeAsId模式
+                                var dataId = list[i]['id'] || '';
+                                var dataUrl = list[i]['content'] || '';
+                                
+                                htmltemp +=     '<div class="thumbnail lake-form-media-field-item lake-form-media-field-item-op" data-type="'+list[i]['type']+'" data-url="'+dataUrl+'" data-id="'+dataId+'" title="'+list[i]['name']+'（'+list[i]['time']+'）">';
                                 htmltemp +=         list[i]['preview'];
                                 htmltemp +=         '<div class="file-info">';
                                 htmltemp +=             '<a href="javascript:;" class="file-name">'+list[i]['namesmall']+'</a>';
@@ -745,17 +734,40 @@ $(function () {
 
                     var urlListStr = inputCont.val();
                     var urlList = [];
+                    
                     if (limit == 1) {
-                        var urlLists = thiz.isJSON(urlListStr);
-                        if (urlLists.length > 0) {
-                            mediaModalTableCont.find('[data-url="'+urlLists[0]+'"]')
-                                .addClass('lake-form-media-selected');
+                        if (urlListStr && urlListStr != '') {
+                            urlList = [urlListStr];
+                        }
+                        
+                        if (storeAsId == 1) {
+                            // 当存储为ID时，通过ID匹配选中项
+                            for (var i = 0; i < urlList.length; i++) {
+                                mediaModalTableCont.find('[data-id="'+urlList[i]+'"]')
+                                    .addClass('lake-form-media-selected');
+                            }
+                        } else {
+                            // 当存储为URL时，通过URL匹配选中项
+                            for (var i = 0; i < urlList.length; i++) {
+                                mediaModalTableCont.find('[data-url="'+urlList[i]+'"]')
+                                    .addClass('lake-form-media-selected');
+                            }
                         }
                     } else {
-                        urlList = thiz.isJSON( urlListStr );
-                        for (var index in urlList) {
-                            mediaModalTableCont.find('[data-url="'+urlList[index]+'"]')
-                                .addClass('lake-form-media-selected');
+                        urlList = thiz.isJSON(urlListStr);
+                        
+                        if (storeAsId == 1) {
+                            // 当存储为ID时，通过ID匹配选中项
+                            for (var i = 0; i < urlList.length; i++) {
+                                mediaModalTableCont.find('[data-id="'+urlList[i]+'"]')
+                                    .addClass('lake-form-media-selected');
+                            }
+                        } else {
+                            // 当存储为URL时，通过URL匹配选中项
+                            for (var i = 0; i < urlList.length; i++) {
+                                mediaModalTableCont.find('[data-url="'+urlList[i]+'"]')
+                                    .addClass('lake-form-media-selected');
+                            }
                         }
                     }
 
@@ -765,6 +777,7 @@ $(function () {
 
                     mediaModalPageCont.data('current-page', currentPage);
                     mediaModalPageCont.data('total-page', totalPage);
+                    mediaModalPageCont.data('page-size', perPage);
 
                     if (totalPage > 1) {
                         if (currentPage > 1) {
@@ -794,36 +807,62 @@ $(function () {
         },
 
         // 刷新表单预览
-        refreshInputPreview: function(cont) {
-            var mediaCont = $(cont).parents('.lake-form-media');
+        refreshInputPreview: function(input) {
+            console.log('refreshInputPreview called');
+            
+            var mediaCont = $(input).parents('.lake-form-media');
             var name = mediaCont.data('name');
-
-            var mediaModalCont = $('#LakeFormMediaModel' + name);
-
-            var value = $(cont).val();
-
             var options = mediaCont.data('options');
-            options = $.extend({}, options);
-
+            
+            var mediaType = options.type || 'image';
+            console.log('Media type:', mediaType);
+            
+            // 如果是视频类型，使用自定义处理方式
+            if (mediaType === 'video') {
+                console.log('Using custom video preview handler');
+                // 不使用默认的刷新方法，而是让事件监听器处理
+                return;
+            }
+            
+            // 对于其他类型，使用原始逻辑
+            var inputCont = mediaCont.find('.lake-form-media-input');
+            var imgShowCont = mediaCont.find('.lake-form-media-img-show');
+            var imgShowRowCont = mediaCont.find('.lake-form-media-img-show-row');
+            
+            var inputVal = inputCont.val();
+            if (inputVal == '[]') {
+                inputVal = '';
+            }
+            
+            if (inputVal == '') {
+                imgShowCont.hide();
+                imgShowRowCont.html('');
+                return;
+            }
+            
+            imgShowCont.show();
+            
+            var rootpath = options.rootpath;
+            var type = options.type;
             var limit = options.limit;
-
-            var valueArr = [];
-            if (limit > 1) {
-                if (value != "") {
-                    valueArr = this.isJSON(value);
-                }
+            var remove = options.remove;
+            var showtitle = options.showtitle;
+            var showicon = options.showicon;
+            var saveFullUrl = options.save_full_url;
+            var storeAsId = options.storeAsId;
+            var isCover = options.is_cover;
+            var videoUrl = options.video_url;
+            
+            imgShowRowCont.html('');
+            
+            var urlList = [];
+            if (limit == 1) {
+                urlList = [inputVal];
             } else {
-                if (value != '[]' && value != '') {
-                    valueArr.push(value)
-                }
+                urlList = this.isJSON(inputVal);
             }
-            this.refreshPreview(name, valueArr, options);
-
-            if (value == "") {
-                mediaModalCont
-                    .find('.lake-form-media-img-show')
-                    .hide();
-            }
+            
+            this.refreshPreview(name, urlList, options);
         },
 
         // 刷新表单数据
@@ -854,6 +893,9 @@ $(function () {
             var rootpath = options.rootpath;
             var showtitle = options.showtitle;
             var showicon = options.showicon;
+            var storeAsId = options.storeAsId;
+            var isCover = options.isCover || false; // 是否是封面图片
+            var videoUrl = options.videoUrl || ''; // 视频URL
 
             var saveFullUrl = options.saveFullUrl;
 
@@ -868,54 +910,158 @@ $(function () {
                 imgShowCont.hide();
             }
 
-            for (var i = 0; i < urlList.length; i++) {
-                var src = urlList[i];
-                if (! this.isUrl(src)) {
-                    if (saveFullUrl != 1) {
-                        src = rootpath + urlList[i];
-                    }
-                }
-
-                var html = '<div class="col-xs-6 col-sm-6 col-md-4 col-lg-3 lake-form-media-preview-item" data-src="'+urlList[i]+'">';
-                html += '<div class="thumbnail lake-form-media-row-col">';
-
-                html += '<div class="lake-form-media-row-img" title="' + urlList[i] + '">';
-                html += this.getFileDisplay(src);
-                html += '</div>';
-
-                var suffix = this.getFileSuffix(src);
-                var showType = this.getFileShowType(src);
-
-                // 显示类型
-                if (showicon) {
-                    html += '<span class="row-icon">';
-                    html += showType;
-                    html += '</span>';
-                }
-
-                // 文件名
-                if (showtitle) {
-                    html += '<div class="row-title" title="' + urlList[i] + '">';
-                    html += urlList[i];
+            // 如果启用了storeAsId，需要获取素材的实际内容
+            if (storeAsId == 1) {
+                // 对于存储为ID的情况，需要异步加载预览
+                for (var i = 0; i < urlList.length; i++) {
+                    var materialId = urlList[i];
+                    
+                    // 创建一个占位符
+                    var html = '<div class="col-xs-6 col-sm-6 col-md-4 col-lg-3 lake-form-media-preview-item" data-src="'+materialId+'" data-loading="1">';
+                    html += '<div class="thumbnail lake-form-media-row-col">';
+                    html += '<div class="lake-form-media-row-img" title="加载中...">';
+                    html += '<i class="fa fa-spinner fa-spin fa-fw lake-form-media-preview-fa"></i>';
                     html += '</div>';
+                    
+                    // 显示类型
+                    if (showicon) {
+                        html += '<span class="row-icon">';
+                        html += '<i class="fa fa-file fa-fw lake-form-media-show-icon" title="loading"></i>';
+                        html += '</span>';
+                    }
+                    
+                    // 文件名
+                    if (showtitle) {
+                        html += '<div class="row-title" title="加载中...">';
+                        html += '加载中...';
+                        html += '</div>';
+                    }
+                    
+                    html += '<div class="caption">';
+                    if (remove) {
+                        html += '<span class="btn btn-default file-delete-multiple lake-form-media-img-show-item-delete" data-url="'+materialId+'" title="' + thiz.lang("remove") + '"><i class="fa fa-trash-o"></i></span>';
+                    }
+                    if (limit > 1) {
+                        html += '<span class="btn btn-default lake-form-media-img-show-item-dragsort js-dragsort" title="' + thiz.lang("dragsort") + '"><i class="fa fa-arrows"></i></span>';
+                    }
+                    html += '</div>';
+                    
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    imgShowRowCont.append(html);
+                    
+                    // 异步获取素材内容
+                    (function(materialId, itemIndex) {
+                        // 获取素材类型
+                        var requestType = options.type || 'image';
+                        
+                        $.ajax({
+                            url: '/admin/material/get-by-id',
+                            method: 'GET',
+                            dataType: 'json',
+                            data: {
+                                id: materialId,
+                                type: requestType // 添加类型参数
+                            },
+                            success: function(res) {
+                                if (res.code == 200 && res.data) {
+                                    var material = res.data;
+                                    var materialUrl = material.content || '';
+                                    var materialType = material.type || '';
+                                    var materialName = material.cname || materialId;
+                                    
+                                    // 查找对应的预览项
+                                    var previewItem = imgShowRowCont.find('.lake-form-media-preview-item[data-src="'+materialId+'"]');
+                                    if (previewItem.length > 0) {
+                                        // 更新预览内容
+                                        var imgCont = previewItem.find('.lake-form-media-row-img');
+                                        imgCont.attr('title', materialName);
+                                        
+                                        // 设置预览内容
+                                        imgCont.html(thiz.getFileDisplay(materialUrl, materialType, material.cover, isCover, videoUrl));
+                                        
+                                        // 更新图标
+                                        if (showicon) {
+                                            var iconCont = previewItem.find('.row-icon');
+                                            iconCont.html(thiz.getFileShowType(materialUrl, materialType));
+                                        }
+                                        
+                                        // 更新标题
+                                        if (showtitle) {
+                                            var titleCont = previewItem.find('.row-title');
+                                            titleCont.attr('title', materialName);
+                                            titleCont.text(materialName);
+                                        }
+                                        
+                                        // 更新预览按钮
+                                        var captionCont = previewItem.find('.caption');
+                                        var suffix = thiz.getFileType(materialType);
+                                        if (suffix == 'image' || suffix == 'video' || suffix == 'audio') {
+                                            var previewBtn = '<span class="btn btn-default lake-form-media-img-show-item-preview" data-type="'+suffix+'" data-url="'+materialUrl+'" title="' + thiz.lang("preview") + '"><i class="fa fa-search-plus"></i></span>';
+                                            captionCont.prepend(previewBtn);
+                                        }
+                                        
+                                        // 标记为已加载
+                                        previewItem.attr('data-loading', '0');
+                                        previewItem.attr('data-material-url', materialUrl);
+                                    }
+                                }
+                            }
+                        });
+                    })(materialId, i);
                 }
+            } else {
+                // 常规URL处理方式
+                for (var i = 0; i < urlList.length; i++) {
+                    var src = urlList[i];
+                    if (! this.isUrl(src)) {
+                        if (saveFullUrl != 1) {
+                            src = rootpath + urlList[i];
+                        }
+                    }
 
-                html += '<div class="caption">';
-                if (suffix == 'image' || suffix == 'video' || suffix == 'audio') {
-                    html += '<span class="btn btn-default lake-form-media-img-show-item-preview" data-type="'+suffix+'" data-url="'+src+'" title="' + thiz.lang("preview") + '"><i class="fa fa-search-plus"></i></span>';
-                }
-                if (remove) {
-                    html += '<span class="btn btn-default file-delete-multiple lake-form-media-img-show-item-delete" data-url="'+urlList[i]+'" title="' + thiz.lang("remove") + '"><i class="fa fa-trash-o"></i></span>';
-                }
-                if (limit > 1) {
-                    html += '<span class="btn btn-default lake-form-media-img-show-item-dragsort js-dragsort" title="' + thiz.lang("dragsort") + '"><i class="fa fa-arrows"></i></span>';
-                }
-                html += '</div>';
+                    var html = '<div class="col-xs-6 col-sm-6 col-md-4 col-lg-3 lake-form-media-preview-item" data-src="'+urlList[i]+'">';
+                    html += '<div class="thumbnail lake-form-media-row-col">';
 
-                html += '</div>';
-                html += '</div>';
+                    html += '<div class="lake-form-media-row-img" title="' + urlList[i] + '">';
+                    html += this.getFileDisplay(src, null, null, isCover, videoUrl);
+                    html += '</div>';
 
-                imgShowRowCont.append(html);
+                    var suffix = this.getFileSuffix(src);
+                    var showType = this.getFileShowType(src);
+
+                    // 显示类型
+                    if (showicon) {
+                        html += '<span class="row-icon">';
+                        html += showType;
+                        html += '</span>';
+                    }
+
+                    // 文件名
+                    if (showtitle) {
+                        html += '<div class="row-title" title="' + urlList[i] + '">';
+                        html += urlList[i];
+                        html += '</div>';
+                    }
+
+                    html += '<div class="caption">';
+                    if (suffix == 'image' || suffix == 'video' || suffix == 'audio') {
+                        html += '<span class="btn btn-default lake-form-media-img-show-item-preview" data-type="'+suffix+'" data-url="'+src+'" title="' + thiz.lang("preview") + '"><i class="fa fa-search-plus"></i></span>';
+                    }
+                    if (remove) {
+                        html += '<span class="btn btn-default file-delete-multiple lake-form-media-img-show-item-delete" data-url="'+urlList[i]+'" title="' + thiz.lang("remove") + '"><i class="fa fa-trash-o"></i></span>';
+                    }
+                    if (limit > 1) {
+                        html += '<span class="btn btn-default lake-form-media-img-show-item-dragsort js-dragsort" title="' + thiz.lang("dragsort") + '"><i class="fa fa-arrows"></i></span>';
+                    }
+                    html += '</div>';
+
+                    html += '</div>';
+                    html += '</div>';
+
+                    imgShowRowCont.append(html);
+                }
             }
         },
 
@@ -996,32 +1142,68 @@ $(function () {
             return ext;
         },
 
-        getFileDisplay: function (src) {
-            var type = this.getFileSuffix(src);
+        getFileDisplay: function (src, type, cover, isCover, videoUrl) {
+            // 如果提供了type参数，直接使用它
+            var fileType = type ? this.getFileType(type) : this.getFileSuffix(src);
+            
+            console.log('getFileDisplay called:', {
+                src: src,
+                type: type,
+                fileType: fileType,
+                cover: cover,
+                isCover: isCover,
+                videoUrl: videoUrl
+            });
 
             var html = '';
-            if (type === 'image') {
+            if (fileType === 'image') {
                 let imageMogr = '?imageMogr2/thumbnail/266x222';
 
                 html += '<img width="100%" src="' + src + imageMogr + '" alt="'+src+'"/>';
-            } else if (type === 'video') {
-                // html += '<video width="100%" height="100%" src="' + src + '"></video>';
-                html += '<i class="fa fa-file-video-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'audio') {
+            } else if (fileType === 'video' || type === 'video') {
+                // 强制处理为视频类型，确保即使fileType判断错误也能正确显示
+                console.log('Processing as video type');
+                
+                // 处理视频预览
+                if (cover && cover !== 'http://') {
+                    // 优先使用封面图片
+                    let imageMogr = '?imageMogr2/thumbnail/266x222';
+                    
+                    html += '<div class="video-cover-container" style="position: relative;">';
+                    html += '<img width="100%" src="' + cover + imageMogr + '" alt="视频封面" data-video-url="' + (videoUrl || src) + '"/>';
+                    html += '<div class="video-play-icon" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 30px;">';
+                    html += '<i class="fa fa-play-circle-o"></i>';
+                    html += '</div>';
+                    html += '</div>';
+                } else if (isCover && videoUrl) {
+                    // 如果是编辑模式下的封面图片预览
+                    let imageMogr = '?imageMogr2/thumbnail/266x222';
+                    html += '<div class="video-cover-container" style="position: relative;">';
+                    html += '<img width="100%" src="' + src + imageMogr + '" alt="视频封面" data-video-url="' + videoUrl + '"/>';
+                    html += '<div class="video-play-icon" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 30px;">';
+                    html += '<i class="fa fa-play-circle-o"></i>';
+                    html += '</div>';
+                    html += '</div>';
+                } else if (this.isUrl(src) && src.indexOf('.mp4') > -1) {
+                    html += '<video width="100%" height="100%" src="' + src + '" preload="metadata"></video>';
+                } else {
+                    html += '<i class="fa fa-file-video-o fa-fw lake-form-media-preview-fa"></i>';
+                }
+            } else if (fileType === 'audio') {
                 html += '<i class="fa fa-file-audio-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'pdf') {
+            } else if (fileType === 'pdf') {
                 html += '<i class="fa fa-file-pdf-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'word') {
+            } else if (fileType === 'word') {
                 html += '<i class="fa fa-file-word-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'ppt') {
+            } else if (fileType === 'ppt') {
                 html += '<i class="fa fa-file-powerpoint-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'xls') {
+            } else if (fileType === 'xls') {
                 html += '<i class="fa fa-file-excel-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'text') {
+            } else if (fileType === 'text') {
                 html += '<i class="fa fa-file-text-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'code') {
+            } else if (fileType === 'code') {
                 html += '<i class="fa fa-file-code-o fa-fw lake-form-media-preview-fa"></i>';
-            } else if (type === 'zip') {
+            } else if (fileType === 'zip') {
                 html += '<i class="fa fa-file-zip-o fa-fw lake-form-media-preview-fa"></i>';
             } else {
                 html += '<i class="fa fa-file fa-fw lake-form-media-preview-fa"></i>';
@@ -1030,119 +1212,66 @@ $(function () {
             return html;
         },
 
-        getFileShowType: function (src) {
-            var type = this.getFileSuffix(src);
+        getFileShowType: function (src, type) {
+            // 如果提供了type参数，直接使用它
+            var fileType = type ? this.getFileType(type) : this.getFileSuffix(src);
 
             var html = '';
-            if (type === 'image') {
-                html += '<i class="fa fa-file-image-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'video') {
-                html += '<i class="fa fa-file-video-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'audio') {
-                html += '<i class="fa fa-file-audio-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'pdf') {
-                html += '<i class="fa fa-file-pdf-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'word') {
-                html += '<i class="fa fa-file-word-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'ppt') {
-                html += '<i class="fa fa-file-powerpoint-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'xls') {
-                html += '<i class="fa fa-file-excel-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'text') {
-                html += '<i class="fa fa-file-text-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'code') {
-                html += '<i class="fa fa-file-code-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
-            } else if (type === 'zip') {
-                html += '<i class="fa fa-file-zip-o fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
+            if (fileType === 'image') {
+                html += '<i class="fa fa-file-image-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'video') {
+                html += '<i class="fa fa-file-video-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'audio') {
+                html += '<i class="fa fa-file-audio-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'pdf') {
+                html += '<i class="fa fa-file-pdf-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'word') {
+                html += '<i class="fa fa-file-word-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'ppt') {
+                html += '<i class="fa fa-file-powerpoint-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'xls') {
+                html += '<i class="fa fa-file-excel-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'text') {
+                html += '<i class="fa fa-file-text-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'code') {
+                html += '<i class="fa fa-file-code-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
+            } else if (fileType === 'zip') {
+                html += '<i class="fa fa-file-zip-o fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
             } else {
-                html += '<i class="fa fa-file fa-fw lake-form-media-show-icon" title="' + type + '"></i>';
+                html += '<i class="fa fa-file fa-fw lake-form-media-show-icon" title="' + fileType + '"></i>';
             }
 
             return html;
         },
 
         getFileType: function (suffix) {
-            // 匹配图片
-            var image = [
-                'jpeg', 'jpg', 'bmp', 'png', 'svg', 'wbmp', 'pic',
-                'cgm', 'djv', 'djvu', 'gif', 'ico', 'ief', 'jp2',
-                'jpe', 'mac', 'pbm', 'pct', 'pgm', 'pict', 'pnm',
-                'pnt', 'pntg', 'ppm', 'qti', 'qtif', 'ras', 'rgb',
-                'tif', 'tiff', 'xbm', 'xpm', 'xwd', 'avif'
-            ];
-
-            // 匹配视频
-            var video = [
-                'mkv', 'avi', 'mp4', 'rmvb', 'rm',
-                'flv', 'wmv', 'asf', 'mpeg', 'mov'
-            ];
-
-            // 匹配音频
-            var audio = [
-                'mp3', 'wav', 'flac', '3pg', 'aa', 'aac', 'ape',
-                'au', 'm4a', 'mpc', 'ogg'
-            ];
-
-            // 匹配 pdf
-            var pdf = [
-                'pdf'
-            ];
-
-            // 匹配 word
-            var word = [
-                'doc', 'dot', 'docx', 'dotx', 'docm', 'dotm', 'wps'
-            ];
-
-            // 匹配 ppt
-            var ppt = [
-                'ppt', 'pptx', 'pptm', 'pot', 'pps', 'ppa', 'pptx',
-                'potx', 'ppsx', 'ppam', 'potm', 'ppsm'
-            ];
-
-            // 匹配 xls
-            var xls = [
-                'xls', 'xlt', 'xla', 'xlsx', 'xltx', 'xlsm',
-                'xltm', 'xlam', 'xlsb'
-            ];
-
-            // 匹配文本
-            var text = [
-                'txt', 'pac', 'log', 'md'
-            ];
-
-            // 匹配代码
-            var code = [
-                'html', 'htm', 'js', 'css', 'vue', 'json',
-                'php', 'java', 'go', 'py', 'ruby', 'rb',
-                'aspx', 'asp', 'c', 'cpp', 'sql', 'm', 'h',
-                'python', 'ruby', 'rs', 'zig', 'v'
-            ];
-
-            // 匹配压缩包
-            var zip = [
-                'zip', 'tar', 'gz', 'rar', 'rpm'
-            ];
-
-            var list = {
-                'image': image,
-                'video': video,
-                'audio': audio,
-                'pdf': pdf,
-                'word': word,
-                'ppt': ppt,
-                'xls': xls,
-                'text': text,
-                'code': code,
-                'zip': zip,
+            console.log('getFileType called with:', suffix);
+            
+            // 如果传入的是类型字符串而不是后缀
+            if (suffix === 'video' || suffix === 'image' || suffix === 'audio' || suffix === 'file') {
+                console.log('Direct type provided:', suffix);
+                return suffix;
+            }
+            
+            // 图片类型
+            var imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico', 'svg'];
+            if ($.inArray(suffix, imageTypes) != -1) {
+                return 'image';
             }
 
-            for (var key in list) {
-                if (list[key].indexOf(suffix) != -1) {
-                    return key;
-                }
-            };
+            // 视频类型
+            var videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'mpeg', 'mpg', 'webm', 'm4v'];
+            if ($.inArray(suffix, videoTypes) != -1) {
+                return 'video';
+            }
 
-            return "other";
+            // 音频类型
+            var audioTypes = ['mp3', 'wav', 'ogg', 'oga', 'flac', 'aac', 'm4a'];
+            if ($.inArray(suffix, audioTypes) != -1) {
+                return 'audio';
+            }
+
+            return 'file';
         },
 
         // 复制
@@ -1187,7 +1316,8 @@ $(function () {
                 }
 
                 string = Lang[string];
-            } else if (string.indexOf('.') !== -1 && false) {
+            } else if (string.indexOf('.') !== -1) {
+                // 处理多级语言包
                 var arr = string.split('.');
                 var current = Lang[arr[0]];
 
@@ -1203,8 +1333,8 @@ $(function () {
                 if (typeof current == 'object') {
                     return current;
                 }
-
-                string = current;
+                
+                string = current || args[0];
             } else {
                 string = args[0];
             }
@@ -1269,6 +1399,97 @@ $(function () {
             });
 
             return string;
+        },
+
+        // 选择文件
+        selectFiles: function(name, files) {
+            var thiz = this;
+
+            var mediaCont = $('.lake-form-media-'+name);
+            var inputCont = mediaCont.find('.lake-form-media-input');
+
+            var options = mediaCont.data('options');
+            options = $.extend({}, options);
+
+            var limit = options.limit;
+            var rootpath = options.rootpath;
+            var saveFullUrl = options.saveFullUrl;
+            var storeAsId = options.storeAsId;
+
+            var urlList = [];
+            var idList = [];
+            
+            // 已经存在的
+            mediaCont.find('.lake-form-media-preview-item')
+                .each(function(i, cont) {
+                    urlList.push($(cont).data('src'));
+                });
+            
+            // 新选择的
+            for (var i = 0; i < files.length; i++) {
+                var url = files[i].content;
+                var id = files[i].id;
+                
+                if (storeAsId == 1) {
+                    idList.push(id);
+                } else {
+                    if (saveFullUrl != 1) {
+                        url = url.replace(rootpath, '');
+                    }
+                    
+                    urlList.push(url);
+                }
+            }
+            
+            // 合并处理
+            var newList = [];
+            
+            if (limit == 1) {
+                // 单选
+                newList = storeAsId == 1 && idList.length > 0 ? 
+                    [idList[idList.length - 1]] : 
+                    [urlList[urlList.length - 1]];
+            } else {
+                // 多选
+                newList = storeAsId == 1 ? 
+                    this.unique(idList.concat(urlList)) : 
+                    this.unique(urlList);
+                
+                if (limit > 1 && newList.length > limit) {
+                    newList = newList.slice(0, limit);
+                }
+            }
+
+            var inputString = JSON.stringify(newList);
+            if (inputString == '[]') {
+                inputString = '';
+            }
+            
+            inputCont.val(inputString);
+            
+            this.refreshPreview(name, newList, options);
+        },
+
+        // 选择项
+        selectItem: function(name, selected) {
+            var thiz = this;
+
+            var mediaCont = $('.lake-form-media-'+name);
+            var inputCont = mediaCont.find('.lake-form-media-input');
+
+            var options = mediaCont.data('options');
+            options = $.extend({}, options);
+
+            var limit = options.limit;
+            var rootpath = options.rootpath;
+            var saveFullUrl = options.saveFullUrl;
+            var storeAsId = options.storeAsId;
+
+            // 使用新的selectFiles方法处理选择
+            this.selectFiles(name, selected);
+
+            var modalId = 'LakeFormMediaModel' + name;
+            $('#' + modalId).modal('hide');
         },
     }
 
