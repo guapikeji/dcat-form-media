@@ -953,8 +953,10 @@ $(function () {
                     
                     // 异步获取素材内容
                     (function(materialId, itemIndex) {
-                        // 获取素材类型
+                        // 获取素材类型 - 确保传递正确的素材类型
                         var requestType = options.type || 'image';
+                        
+                        console.log('Requesting material:', materialId, 'type:', requestType);
                         
                         $.ajax({
                             url: '/admin/material/get-by-id',
@@ -962,13 +964,15 @@ $(function () {
                             dataType: 'json',
                             data: {
                                 id: materialId,
-                                type: requestType // 添加类型参数
+                                type: requestType // 始终传递素材类型
                             },
                             success: function(res) {
+                                console.log('Material response:', res);
+                                
                                 if (res.code == 200 && res.data) {
                                     var material = res.data;
                                     var materialUrl = material.content || '';
-                                    var materialType = material.type || '';
+                                    var materialType = material.type || requestType; // 使用返回的类型或请求的类型
                                     var materialName = material.cname || materialId;
                                     
                                     // 查找对应的预览项
@@ -1006,6 +1010,23 @@ $(function () {
                                         previewItem.attr('data-loading', '0');
                                         previewItem.attr('data-material-url', materialUrl);
                                     }
+                                } else {
+                                    console.error('Failed to load material:', materialId, res);
+                                    // 处理加载失败的情况
+                                    var previewItem = imgShowRowCont.find('.lake-form-media-preview-item[data-src="'+materialId+'"]');
+                                    if (previewItem.length > 0) {
+                                        var imgCont = previewItem.find('.lake-form-media-row-img');
+                                        imgCont.html('<i class="fa fa-exclamation-triangle fa-fw" style="color:red;"></i> 加载失败');
+                                    }
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('AJAX error:', error);
+                                // 处理AJAX错误的情况
+                                var previewItem = imgShowRowCont.find('.lake-form-media-preview-item[data-src="'+materialId+'"]');
+                                if (previewItem.length > 0) {
+                                    var imgCont = previewItem.find('.lake-form-media-row-img');
+                                    imgCont.html('<i class="fa fa-exclamation-triangle fa-fw" style="color:red;"></i> 请求出错');
                                 }
                             }
                         });
@@ -1155,11 +1176,16 @@ $(function () {
                 videoUrl: videoUrl
             });
 
+            // 确保src不为空
+            if (!src) {
+                console.error('Empty src provided');
+                return '<i class="fa fa-exclamation-triangle fa-fw" style="color:red;"></i> 无效链接';
+            }
+
             var html = '';
             if (fileType === 'image') {
-                let imageMogr = '?imageMogr2/thumbnail/266x222';
-
-                html += '<img width="100%" src="' + src + imageMogr + '" alt="'+src+'"/>';
+                // 添加错误处理，确保图片加载失败时显示错误图标
+                html += '<img width="100%" src="' + src + '" alt="'+src+'" onerror="this.onerror=null;this.src=\'\';this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fa fa-exclamation-triangle fa-fw\\\' style=\\\'color:red;\\\'></i> 图片加载失败\'"/>';
             } else if (fileType === 'video' || type === 'video') {
                 // 强制处理为视频类型，确保即使fileType判断错误也能正确显示
                 console.log('Processing as video type');
@@ -1167,19 +1193,16 @@ $(function () {
                 // 处理视频预览
                 if (cover && cover !== 'http://') {
                     // 优先使用封面图片
-                    let imageMogr = '?imageMogr2/thumbnail/266x222';
-                    
                     html += '<div class="video-cover-container" style="position: relative;">';
-                    html += '<img width="100%" src="' + cover + imageMogr + '" alt="视频封面" data-video-url="' + (videoUrl || src) + '"/>';
+                    html += '<img width="100%" src="' + cover + '" alt="视频封面" data-video-url="' + (videoUrl || src) + '" onerror="this.onerror=null;this.src=\'\';this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fa fa-video-camera fa-fw\\\' style=\\\'color:#666;\\\'></i> 视频封面加载失败\'"/>';
                     html += '<div class="video-play-icon" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 30px;">';
                     html += '<i class="fa fa-play-circle-o"></i>';
                     html += '</div>';
                     html += '</div>';
                 } else if (isCover && videoUrl) {
                     // 如果是编辑模式下的封面图片预览
-                    let imageMogr = '?imageMogr2/thumbnail/266x222';
                     html += '<div class="video-cover-container" style="position: relative;">';
-                    html += '<img width="100%" src="' + src + imageMogr + '" alt="视频封面" data-video-url="' + videoUrl + '"/>';
+                    html += '<img width="100%" src="' + src + '" alt="视频封面" data-video-url="' + videoUrl + '" onerror="this.onerror=null;this.src=\'\';this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fa fa-video-camera fa-fw\\\' style=\\\'color:#666;\\\'></i> 封面加载失败\'"/>';
                     html += '<div class="video-play-icon" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 30px;">';
                     html += '<i class="fa fa-play-circle-o"></i>';
                     html += '</div>';
@@ -1252,6 +1275,21 @@ $(function () {
                 console.log('Direct type provided:', suffix);
                 return suffix;
             }
+            
+            // 如果是空值或无效值
+            if (!suffix) {
+                console.warn('Empty suffix provided');
+                return 'file';
+            }
+            
+            // 确保suffix是字符串
+            if (typeof suffix !== 'string') {
+                console.warn('Non-string suffix:', suffix);
+                return 'file';
+            }
+            
+            // 转换为小写
+            suffix = suffix.toLowerCase();
             
             // 图片类型
             var imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico', 'svg'];
@@ -1416,13 +1454,23 @@ $(function () {
             var saveFullUrl = options.saveFullUrl;
             var storeAsId = options.storeAsId;
 
+            // 记录日志，帮助调试
+            console.log('selectFiles called:', {
+                name: name,
+                files: files,
+                storeAsId: storeAsId,
+                limit: limit
+            });
+
             var urlList = [];
             var idList = [];
             
             // 已经存在的
             mediaCont.find('.lake-form-media-preview-item')
                 .each(function(i, cont) {
-                    urlList.push($(cont).data('src'));
+                    var itemSrc = $(cont).data('src');
+                    console.log('Existing item:', itemSrc);
+                    urlList.push(itemSrc);
                 });
             
             // 新选择的
@@ -1430,8 +1478,14 @@ $(function () {
                 var url = files[i].content;
                 var id = files[i].id;
                 
+                console.log('Selected item:', { id: id, url: url });
+                
                 if (storeAsId == 1) {
-                    idList.push(id);
+                    if (id) {
+                        idList.push(id);
+                    } else {
+                        console.warn('Missing ID for storeAsId mode:', url);
+                    }
                 } else {
                     if (saveFullUrl != 1) {
                         url = url.replace(rootpath, '');
@@ -1446,17 +1500,28 @@ $(function () {
             
             if (limit == 1) {
                 // 单选
-                newList = storeAsId == 1 && idList.length > 0 ? 
-                    [idList[idList.length - 1]] : 
-                    [urlList[urlList.length - 1]];
+                if (storeAsId == 1 && idList.length > 0) {
+                    newList = [idList[idList.length - 1]];
+                    console.log('Single select (ID):', newList);
+                } else if (urlList.length > 0) {
+                    newList = [urlList[urlList.length - 1]];
+                    console.log('Single select (URL):', newList);
+                }
             } else {
                 // 多选
-                newList = storeAsId == 1 ? 
-                    this.unique(idList.concat(urlList)) : 
-                    this.unique(urlList);
+                if (storeAsId == 1) {
+                    // 当使用ID存储时，可能需要保留原有的URL列表（如果它们是ID）
+                    var combinedList = idList.concat(urlList);
+                    newList = this.unique(combinedList);
+                    console.log('Multi select (ID):', newList);
+                } else {
+                    newList = this.unique(urlList);
+                    console.log('Multi select (URL):', newList);
+                }
                 
                 if (limit > 1 && newList.length > limit) {
                     newList = newList.slice(0, limit);
+                    console.log('Limited to:', newList);
                 }
             }
 
@@ -1465,6 +1530,7 @@ $(function () {
                 inputString = '';
             }
             
+            console.log('Final input value:', inputString);
             inputCont.val(inputString);
             
             this.refreshPreview(name, newList, options);
