@@ -888,6 +888,15 @@ $(function () {
         refreshPreview: function(name, urlList, options = []) {
             var thiz = this;
 
+            // 过滤掉空值
+            var filteredUrlList = [];
+            for (var i = 0; i < urlList.length; i++) {
+                if (urlList[i] && urlList[i].trim() !== '') {
+                    filteredUrlList.push(urlList[i]);
+                }
+            }
+            urlList = filteredUrlList;
+
             var limit = options.limit;
             var remove = options.remove;
             var rootpath = options.rootpath;
@@ -1089,7 +1098,8 @@ $(function () {
         unique: function (arr){
             var hash = [];
             for (var i = 0; i < arr.length; i++) {
-                if(hash.indexOf(arr[i])==-1){
+                // 过滤掉空值和空字符串
+                if(arr[i] && hash.indexOf(arr[i])==-1){
                     hash.push(arr[i]);
                 }
             }
@@ -1528,13 +1538,35 @@ $(function () {
             } else {
                 // 多选
                 if (storeAsId == 1) {
-                    // 当使用ID存储时，可能需要保留原有的URL列表（如果它们是ID）
-                    var combinedList = idList.concat(urlList);
-                    newList = this.unique(combinedList);
-                    console.log('Multi select (ID):', newList);
+                    // 当使用ID存储时，只使用新选择的ID列表
+                    newList = this.unique(idList);
                 } else {
-                    newList = this.unique(urlList);
-                    console.log('Multi select (URL):', newList);
+                    // 当第一次选择时，只使用新选择的URL
+                    if (urlList.length <= files.length) {
+                        // 只取新选择的
+                        var newUrlList = [];
+                        for (var i = 0; i < files.length; i++) {
+                            var url = files[i].content;
+                            // 确保URL不为空
+                            if (url && url.trim() !== '') {
+                                if (saveFullUrl != 1) {
+                                    url = url.replace(rootpath, '');
+                                }
+                                newUrlList.push(url);
+                            }
+                        }
+                        newList = this.unique(newUrlList);
+                    } else {
+                        // 已有选择的情况，只取新的文件
+                        // 先过滤掉原有urlList中的空值
+                        var filteredUrlList = [];
+                        for (var i = 0; i < urlList.length; i++) {
+                            if (urlList[i] && urlList[i].trim() !== '') {
+                                filteredUrlList.push(urlList[i]);
+                            }
+                        }
+                        newList = this.unique(filteredUrlList.slice(-files.length));
+                    }
                 }
                 
                 if (limit > 1 && newList.length > limit) {
@@ -1544,7 +1576,7 @@ $(function () {
             }
 
             var inputString = JSON.stringify(newList);
-            if (inputString == '[]') {
+            if (inputString == '[]' || inputString == '[""]') {
                 inputString = '';
             }
             
