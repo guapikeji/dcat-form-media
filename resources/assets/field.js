@@ -1504,8 +1504,26 @@ $(function () {
                     newList = [idList[idList.length - 1]];
                     console.log('Single select (ID):', newList);
                 } else if (urlList.length > 0) {
-                    newList = [urlList[urlList.length - 1]];
-                    console.log('Single select (URL):', newList);
+                    // 对于单图上传且非storeAsId模式，直接存储URL字符串而非数组
+                    if (storeAsId != 1) {
+                        var url = urlList[urlList.length - 1];
+                        // 检查URL是否是相对路径，如果saveFullUrl为1则添加根路径
+                        if (url && url.indexOf('http') !== 0 && url.indexOf('//') !== 0 && saveFullUrl == 1) {
+                            // 移除可能的根路径前缀，以避免重复添加
+                            if (url.indexOf(rootpath) === 0) {
+                                url = url.replace(rootpath, '');
+                            }
+                            // 添加根路径前缀
+                            url = rootpath + url;
+                        }
+                        inputCont.val(url);
+                        console.log('Single select (URL string):', url, 'saveFullUrl:', saveFullUrl);
+                        this.refreshPreview(name, [url], options);
+                        return; // 提前返回，不继续执行
+                    } else {
+                        newList = [urlList[urlList.length - 1]];
+                        console.log('Single select (URL):', newList);
+                    }
                 }
             } else {
                 // 多选
