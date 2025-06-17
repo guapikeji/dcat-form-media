@@ -648,6 +648,13 @@ $(function () {
             var pageSize = options.pagesize;
             var storeAsId = options.storeAsId;
 
+            // 确保路径没有特殊字符
+            if (path && typeof path === 'string') {
+                path = path.replace(/[\[\]]/g, '');
+            } else {
+                path = '/';
+            }
+
             var mediaModalCont = $('#LakeFormMediaModel' + name);
             var mediaModalTableCont = mediaModalCont.find('.lake-form-media-body-table');
             var mediaModalNavOlCont = mediaModalCont.find('.lake-form-media-nav-ol');
@@ -891,7 +898,7 @@ $(function () {
             // 过滤掉空值
             var filteredUrlList = [];
             for (var i = 0; i < urlList.length; i++) {
-                if (urlList[i] && urlList[i].trim() !== '') {
+                if (urlList[i] && (typeof urlList[i] === 'string' ? urlList[i].trim() !== '' : true)) {
                     filteredUrlList.push(urlList[i]);
                 }
             }
@@ -1195,7 +1202,7 @@ $(function () {
             var html = '';
             if (fileType === 'image') {
                 // 添加错误处理，确保图片加载失败时显示错误图标
-                html += '<img width="100%" src="' + src + '" alt="'+src+'" onerror="this.onerror=null;this.src=\'\';this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fa fa-exclamation-triangle fa-fw\\\' style=\\\'color:red;\\\'></i> 图片加载失败\'"/>';
+                html += '<img width="100%" src="' + src + '" alt="'+src+'" onerror="this.onerror=null;this.src=\'\';this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fa fa-image fa-fw\\\' style=\\\'color:#666;\\\'></i> 图片加载失败\'"/>';
             } else if (fileType === 'video' || type === 'video') {
                 // 强制处理为视频类型，确保即使fileType判断错误也能正确显示
                 console.log('Processing as video type');
@@ -1548,7 +1555,7 @@ $(function () {
                         for (var i = 0; i < files.length; i++) {
                             var url = files[i].content;
                             // 确保URL不为空
-                            if (url && url.trim() !== '') {
+                            if (url && (typeof url === 'string' ? url.trim() !== '' : true)) {
                                 if (saveFullUrl != 1) {
                                     url = url.replace(rootpath, '');
                                 }
@@ -1561,7 +1568,7 @@ $(function () {
                         // 先过滤掉原有urlList中的空值
                         var filteredUrlList = [];
                         for (var i = 0; i < urlList.length; i++) {
-                            if (urlList[i] && urlList[i].trim() !== '') {
+                            if (urlList[i] && (typeof urlList[i] === 'string' ? urlList[i].trim() !== '' : true)) {
                                 filteredUrlList.push(urlList[i]);
                             }
                         }
