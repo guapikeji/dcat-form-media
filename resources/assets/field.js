@@ -975,7 +975,7 @@ $(function () {
                         console.log('Requesting material:', materialId, 'type:', requestType);
                         
                         $.ajax({
-                            url: '/admin/material/get-by-id',
+                            url: '/admin/api/material/get-by-id',
                             method: 'GET',
                             dataType: 'json',
                             data: {
